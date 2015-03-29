@@ -358,3 +358,15 @@ u32 _ump_ukk_report_memory_usage(void)
 	else
 		return 0;
 }
+
+void _ump_printk(const char *fmt, ...)
+{
+#if defined(CONFIG_MALI_QUIET)
+	(void)fmt;
+#else
+	va_list args;
+	va_start(args, fmt);
+	vprintk(fmt, args);
+	va_end(args);
+#endif /* !defined(CONFIG_MALI_QUIET) */
+}

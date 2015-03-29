@@ -17,10 +17,11 @@
 #include "ump_kernel_random_mapping.h"
 #include "ump_kernel_memory_backend.h"
 
+extern void _ump_printk(const char * fmt, ...);
 
 #ifdef DEBUG
 extern int ump_debug_level;
-#define UMP_DEBUG_PRINT(args) _mali_osk_dbgmsg args
+#define UMP_DEBUG_PRINT(args) _ump_printk args
 #define UMP_DEBUG_CODE(args) args
 #define DBG_MSG(level,args)  do { /* args should be in brackets */ \
 		((level) <=  ump_debug_level)?\
@@ -53,15 +54,15 @@ extern int ump_debug_level;
 #endif /* DEBUG */
 
 #define MSG_ERR(args) do{ /* args should be in brackets */ \
-		_mali_osk_dbgmsg("UMP: ERR: %s\n" ,__FILE__); \
-		_mali_osk_dbgmsg( "           %s()%4d\n", __FUNCTION__, __LINE__) ; \
-		_mali_osk_dbgmsg args ; \
-		_mali_osk_dbgmsg("\n"); \
+		_ump_printk("UMP: ERR: %s\n" ,__FILE__); \
+		_ump_printk( "           %s()%4d\n", __FUNCTION__, __LINE__) ; \
+		_ump_printk args ; \
+		_ump_printk("\n"); \
 	} while(0)
 
 #define MSG(args) do{ /* args should be in brackets */ \
-		_mali_osk_dbgmsg("UMP: "); \
-		_mali_osk_dbgmsg args; \
+		_ump_printk("UMP: "); \
+		_ump_printk args; \
 	} while (0)
 
 
