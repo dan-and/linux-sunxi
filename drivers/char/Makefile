@@ -66,5 +66,3 @@ obj-$(CONFIG_SUNXI_G2D) += sunxi_g2d/
 js-rtc-y = rtc.o
 
 obj-$(CONFIG_TILE_SROM)		+= tile-srom.o
-
-obj-$(CONFIG_SUNXI_PHYS_MEM_ALLOCATOR)	+= sunxi_mem/

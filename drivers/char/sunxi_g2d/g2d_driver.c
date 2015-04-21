@@ -426,8 +426,7 @@ long g2d_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 
 	/* Invalid IOCTL call */
 	default:
-		ret = -EINVAL;
-		break;
+		return -EINVAL;
 	}
 
 err_noput:

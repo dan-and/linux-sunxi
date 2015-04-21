@@ -120,12 +120,9 @@ __disp_clk_tab clk_tab = {
 	}
 };
 
-/* 300MHz */
-#define DEBE_CLOCK_SPEED_LIMIT 300000000
-
 __s32 image_clk_init(__u32 sel)
 {
-	__u32 dram_pll, pll5_div;
+	__u32 dram_pll;
 
 	if (sel == 0) {
 		h_debe0ahbclk = OSAL_CCMU_OpenMclk(AW_MOD_CLK_AHB_DEBE0);
@@ -140,8 +137,10 @@ __s32 image_clk_init(__u32 sel)
 		OSAL_CCMU_SetMclkSrc(h_debe0mclk, AW_SYS_CLK_PLL5P);
 
 		dram_pll = OSAL_CCMU_GetSrcFreq(AW_SYS_CLK_PLL5P);
-		pll5_div = DIV_ROUND_UP(dram_pll, DEBE_CLOCK_SPEED_LIMIT);
-		OSAL_CCMU_SetMclkDiv(h_debe0mclk, pll5_div);
+		if (dram_pll < 300000000)
+			OSAL_CCMU_SetMclkDiv(h_debe0mclk, 1);
+		else
+			OSAL_CCMU_SetMclkDiv(h_debe0mclk, 2);
 
 		OSAL_CCMU_MclkOnOff(h_debe0ahbclk, CLK_ON);
 		if (sunxi_is_sun4i()) {
@@ -163,8 +162,10 @@ __s32 image_clk_init(__u32 sel)
 		OSAL_CCMU_SetMclkSrc(h_debe1mclk, AW_SYS_CLK_PLL5P);
 
 		dram_pll = OSAL_CCMU_GetSrcFreq(AW_SYS_CLK_PLL5P);
-		pll5_div = DIV_ROUND_UP(dram_pll, DEBE_CLOCK_SPEED_LIMIT);
-		OSAL_CCMU_SetMclkDiv(h_debe1mclk, pll5_div);
+		if (dram_pll < 300000000)
+			OSAL_CCMU_SetMclkDiv(h_debe1mclk, 1);
+		else
+			OSAL_CCMU_SetMclkDiv(h_debe1mclk, 2);
 
 		OSAL_CCMU_MclkOnOff(h_debe1ahbclk, CLK_ON);
 		if (sunxi_is_sun4i()) {
