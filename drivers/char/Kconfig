@@ -630,7 +630,6 @@ config TILE_SROM
 	  how to partition a single ROM for multiple purposes.
 
 source "drivers/char/sunxi_g2d/Kconfig"
-source "drivers/char/sunxi_mem/Kconfig"
 
 endmenu
 

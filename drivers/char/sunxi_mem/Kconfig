@@ -1,9 +1,0 @@
-#
-# sunxi continous physic memory allocator.
-#
-
-config SUNXI_PHYS_MEM_ALLOCATOR
-	tristate "sunxi continous physic memory allocator"
-	default y
-	help
-	Nothing help.

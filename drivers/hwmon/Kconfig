@@ -48,15 +48,6 @@ config SENSORS_MMA7660
 	  If you say yes here you get support for the Freescale 3-Axis 
 	  Orientation/Motion Detection Sensor.
 
-config SENSORS_A20_TP_HWMON
-	tristate "A20 SoC TP sensor controller"
-	depends on !TOUCHSCREEN_SUN4I_TS
-	help
-	  If you say yes here you get support for the hardware monitoring
-	  sensor present in the touch screen controler present on A20 SoC.
-	  This driver handle only this, if you want the full usage of the TP
-	  you need the other driver named sun4i-ts.
-
 config SENSORS_ABITUGURU
 	tristate "Abit uGuru (rev 1 & 2)"
 	depends on X86 && DMI && EXPERIMENTAL
