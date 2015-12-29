@@ -49,6 +49,7 @@ typedef enum
 	_UMP_IOC_SWITCH_HW_USAGE,
 	_UMP_IOC_LOCK,
 	_UMP_IOC_UNLOCK,
+	_UMP_IOC_PHYS_ADDR_GET,
 }_ump_uk_functions;
 
 typedef enum
@@ -116,6 +117,16 @@ typedef struct _ump_uk_size_get_s
 	u32 secure_id;                          /**< Input to DD */
 	u32 size;                               /**< Returned size; output */
 } _ump_uk_size_get_s;
+
+/**
+ * PHYS_ADDR_GET ([in] u32 secure_id, [out]phys_addr )
+ */
+typedef struct _ump_uk_phys_addr_get_s
+{
+	void *ctx;                              /**< [in,out] user-kernel context (trashed on output) */
+	u32 secure_id;                          /**< Input to DD */
+	void *phys_addr;                        /**< Returned physical address; output */
+} _ump_uk_phys_addr_get_s;
 
 /**
  * Release ([in] u32 secure_id)

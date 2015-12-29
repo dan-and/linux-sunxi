@@ -43,6 +43,7 @@ ump-y = common/ump_kernel_common.o \
 	linux/ump_kernel_linux.o \
 	linux/ump_kernel_memory_backend_os.o \
 	linux/ump_kernel_memory_backend_dedicated.o \
+	linux/ump_kernel_memory_backend_cma.o \
 	linux/ump_memory_backend.o \
 	linux/ump_ukk_wrappers.o \
 	linux/ump_ukk_ref_wrappers.o \

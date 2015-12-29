@@ -13,7 +13,10 @@
 
 #include "ump_kernel_interface.h"
 #include "mali_osk.h"
+#include <linux/cdev.h>
+#include <linux/device.h>
 
+#define UMP_LICENSE_IS_GPL 1
 
 typedef enum
 {
@@ -40,6 +43,7 @@ typedef struct ump_dd_mem
 	unsigned long size_bytes;
 	unsigned long nr_blocks;
 	ump_dd_physical_block * block_array;
+	void * cpu_addr;
 	void (*release_func)(void * ctx, struct ump_dd_mem * descriptor);
 	void * ctx;
 	void * backend_info;
@@ -48,6 +52,13 @@ typedef struct ump_dd_mem
 	ump_lock_usage lock_usage;
 } ump_dd_mem;
 
-
+struct ump_device
+{
+	struct cdev cdev;
+#if UMP_LICENSE_IS_GPL
+	struct class * ump_class;
+	struct device *mdev;
+#endif
+};
 
 #endif /* __UMP_KERNEL_TYPES_H__ */

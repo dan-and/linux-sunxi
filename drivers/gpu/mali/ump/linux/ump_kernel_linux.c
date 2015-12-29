@@ -17,6 +17,7 @@
 #include <asm/atomic.h>
 #include <linux/device.h>
 #include <linux/debugfs.h>
+#include <linux/dma-mapping.h>
 
 #include "config.h"             /* Configuration for current platform. The symlinc for arch is set by Makefile */
 #include "ump_ioctl.h"
@@ -65,16 +66,10 @@ typedef struct ump_vma_usage_tracker
 	ump_dd_handle handle;
 } ump_vma_usage_tracker;
 
-struct ump_device
-{
-	struct cdev cdev;
-#if UMP_LICENSE_IS_GPL
-	struct class * ump_class;
-#endif
-};
+
 
 /* The global variable containing the global device data */
-static struct ump_device ump_device;
+struct ump_device ump_device;
 
 
 /* Forward declare static functions */
@@ -207,14 +202,19 @@ int ump_kernel_device_initialize(void)
 			}
 			else
 			{
-				struct device * mdev;
-				mdev = device_create(ump_device.ump_class, NULL, dev, NULL, ump_dev_name);
-				if (!IS_ERR(mdev))
+				ump_device.mdev = device_create(ump_device.ump_class, NULL, dev, NULL, ump_dev_name);
+				if (!IS_ERR(ump_device.mdev))
 				{
+					DBG_MSG(2, ("dma_set_mask_and_coherent calling\n"));
+					err = dma_set_coherent_mask(ump_device.mdev, DMA_BIT_MASK(28));
+					DBG_MSG(2, ("dma_set_mask_and_coherent result=%d\n", err));
+					if(err < 0)
+					  	DBG_MSG(2, ("dma_set_mask_and_coherent failed\n"));
+
 					return 0;
 				}
 
-				err = PTR_ERR(mdev);
+				err = PTR_ERR(ump_device.mdev);
 			}
 			cdev_del(&ump_device.cdev);
 #else
@@ -367,6 +367,10 @@ static int ump_file_ioctl(struct inode *inode, struct file *filp, unsigned int c
 		case UMP_IOC_UNLOCK:
 			err = ump_unlock_wrapper((u32 __user *)argument, session_data);
 			break;
+			
+		case UMP_IOC_PHYS_ADDR_GET:
+			err = ump_phys_addr_get_wrapper((u32 __user *)argument, session_data);
+			break;
 
 		default:
 			DBG_MSG(1, ("No handler for IOCTL. cmd: 0x%08x, arg: 0x%08lx\n", cmd, arg));
@@ -449,6 +453,7 @@ EXPORT_SYMBOL(ump_dd_phys_blocks_get);
 EXPORT_SYMBOL(ump_dd_size_get);
 EXPORT_SYMBOL(ump_dd_reference_add);
 EXPORT_SYMBOL(ump_dd_reference_release);
+EXPORT_SYMBOL(ump_device);
 
 /* Export our own extended kernel space allocator */
 EXPORT_SYMBOL(ump_dd_handle_create_from_phys_blocks);
