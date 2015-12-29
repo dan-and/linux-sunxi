@@ -47,6 +47,7 @@
 #include <linux/i2c.h>
 
 #include <video/sunxi_disp_ioctl.h>
+#include <video/sunxi_disp.h>
 #include <linux/drv_hdmi.h>
 
 #define __inf(msg, ...) pr_debug("[DISP] " msg, ##__VA_ARGS__)
