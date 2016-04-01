@@ -703,7 +703,7 @@ ssize_t pwm_set_mode(unsigned int enable, struct sun4i_pwm_available_channel *ch
 			chan->ctrl_current.s.ch1_act_state = 0;
 			chan->ctrl_current.s.ch1_mode = 0;
 			chan->ctrl_current.s.ch1_pulse_start = 0;
-			chan->ctrl_current.s.ch1_en = 1;
+			chan->ctrl_current.s.ch1_en = 0; /* 0 not 1 because channel 0 or 1 must be disable at init */
 			chan->ctrl_current.s.ch1_clk_gating = 0;
 			break;
 		default:
@@ -918,6 +918,28 @@ void pwm_disable(struct pwm_device *pwm)
 }
 EXPORT_SYMBOL(pwm_disable);
 
+void pwm_polarity(struct pwm_device *pwm,int act_state)
+{
+	if (pwm == NULL) {
+		return;
+	}
+	if(act_state < 2) {
+		switch (pwm->chan->channel) {
+		case 0:
+			pwm->chan->ctrl_current.s.ch0_act_state = act_state;
+			break;
+		case 1:
+			pwm->chan->ctrl_current.s.ch1_act_state = act_state;
+			break;
+		default:
+			status = -EINVAL;
+			break;
+		}
+	}
+	return;
+
+}
+EXPORT_SYMBOL(pwm_polarity);
 void pwm_free(struct pwm_device *pwm)
 {
 	if (pwm->chan->use_count) {
