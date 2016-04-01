@@ -671,7 +671,6 @@ static struct file *__dentry_open(struct path *path, struct file *f,
 	f->f_mapping = inode->i_mapping;
 	f->f_path = *path;
 	f->f_pos = 0;
-	file_sb_list_add(f, inode->i_sb);
 
 	if (unlikely(f->f_mode & FMODE_PATH)) {
 		f->f_op = &empty_fops;
@@ -729,7 +728,6 @@ cleanup_all:
 			mnt_drop_write(path->mnt);
 		}
 	}
-	file_sb_list_del(f);
 	f->f_path.dentry = NULL;
 	f->f_path.mnt = NULL;
 cleanup_file:

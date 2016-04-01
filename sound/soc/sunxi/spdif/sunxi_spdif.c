@@ -248,7 +248,8 @@ static int sunxi_spdif_hw_params(struct snd_pcm_substream *substream,
 
 		/* Set TX FIFO Input Mode */
 		reg_val = readl(sunxi_spdif.regs + SUNXI_SPDIF_FCTL);
-		reg_val &= ~SUNXI_SPDIF_FCTL_TXIM1;	//0. Valid data at the MSB of OWA_TXFIFO register
+		reg_val |= SUNXI_SPDIF_FCTL_TXIM1;	//1. Valid data at the LSB of OWA_TXFIFO register
+		//reg_val &= ~SUNXI_SPDIF_FCTL_TXIM1;	//0. Valid data at the MSB of OWA_TXFIFO register
 		writel(reg_val, sunxi_spdif.regs + SUNXI_SPDIF_FCTL);
 	}
 	else {
