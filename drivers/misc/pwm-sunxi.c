@@ -497,44 +497,44 @@ enum sun4i_pwm_prescale  pwm_get_best_prescale(unsigned long long period_in_us) 
         if (period_ns < MAX_CYCLES * 1000 / 24) /* ~2.7ms */
             goto finded;
 
-        if (period_ns < MAX_CYCLES * 120 * 1000 / 24){ /*~327ms~*/
+        if (period_ns < MAX_CYCLES * 5000){ /*~327ms~*/
             best_prescale = PRESCALE_DIV120;
             goto finded;
         }
-        if (period_ns < MAX_CYCLES * 180 * 1000 / 24){ /*~491ms~*/
+        if (period_ns < MAX_CYCLES * 7500){ /*~491ms~*/
             best_prescale = PRESCALE_DIV180;
             goto finded;
         }
-        if (period_ns < MAX_CYCLES * 240 * 1000 / 24){ /*~655ms~*/
+        if (period_ns < MAX_CYCLES * 10000){ /*~655ms~*/
             best_prescale = PRESCALE_DIV240;
             goto finded;
         }
-        if (period_ns < MAX_CYCLES * 360 * 1000 / 24){ /*~983ms~*/
+        if (period_ns < MAX_CYCLES * 15000){ /*~983ms~*/
             best_prescale = PRESCALE_DIV360;
             goto finded;
         }
-        if (period_ns < MAX_CYCLES * 480 * 1000 / 24){ /*~1310ms~*/
+        if (period_ns < MAX_CYCLES * 20000){ /*~1310ms~*/
             best_prescale = PRESCALE_DIV480;
             goto finded;
         }
-        if (period_in_us < MAX_CYCLES * 12 * 1000 / 24){ /*~32767.5ms~*/
+        if (period_in_us < MAX_CYCLES * 500){ /*~32767.5ms~*/
             best_prescale = PRESCALE_DIV12k;
             goto finded;
         }
 
-        if (period_in_us < MAX_CYCLES * 24 * 1000 / 24){ /*~65535ms*/
+        if (period_in_us < MAX_CYCLES * 1000){ /*~65535ms*/
             best_prescale = PRESCALE_DIV24k;
             goto finded;
         }
-        if (period_in_us < MAX_CYCLES * 36 * 1000/24){ /*~98302ms~*/
+        if (period_in_us < MAX_CYCLES * 1500){ /*~98302ms~*/
             best_prescale = PRESCALE_DIV36k;
             goto finded;
         }
-        if (period_in_us < MAX_CYCLES * 48 * 1000/24){ /*~130070ms~*/
+        if (period_in_us < MAX_CYCLES * 2000){ /*~130070ms~*/
             best_prescale = PRESCALE_DIV48k;
             goto finded;
         }
-        if (period_in_us < MAX_CYCLES * 72 * 1000/24){  /*max absolute error ~~1.5ms */
+        if (period_in_us < MAX_CYCLES * 3000){  /*max absolute error ~~1.5ms */
             best_prescale = PRESCALE_DIV72k;
         }
     }
@@ -932,7 +932,6 @@ void pwm_polarity(struct pwm_device *pwm,int act_state)
 			pwm->chan->ctrl_current.s.ch1_act_state = act_state;
 			break;
 		default:
-			status = -EINVAL;
 			break;
 		}
 	}

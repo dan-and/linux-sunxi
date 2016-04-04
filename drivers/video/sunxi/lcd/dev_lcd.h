@@ -49,7 +49,7 @@
 #include <plat/sys_config.h>
 
 #include <video/sunxi_disp_ioctl.h>
-#include <video/sunxi_disp.h>
+//#include <video/sunxi_disp.h>
 
 extern void LCD_get_panel_funs_0(__lcd_panel_fun_t *fun);
 extern void LCD_get_panel_funs_1(__lcd_panel_fun_t *fun);
