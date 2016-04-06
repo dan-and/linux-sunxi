@@ -14,3 +14,4 @@ obj-$(CONFIG_LIRC_TTUSBIR)	+= lirc_ttusbir.o
 obj-$(CONFIG_LIRC_ZILOG)	+= lirc_zilog.o
 obj-$(CONFIG_LIRC_GPIO)		+= lirc_gpio.o
 obj-$(CONFIG_LIRC_SUNXI_RAW)	+= sunxi-lirc.o
+obj-$(CONFIG_LIRC_SEND_PWM)	+= lirc_send_pwm.o 
