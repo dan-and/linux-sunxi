@@ -24,15 +24,7 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-
- a utiliser :
- int pwm_config(struct pwm_device *pwm, int duty_ns, int period_ns)
- struct pwm_device *pwm_request(int pwm_id, const char *label)
- int pwm_enable(struct pwm_device *pwm)
- void pwm_disable(struct pwm_device *pwm)
- void pwm_free(struct pwm_device *pwm)
- */
+ * */
 
 #include <linux/module.h>
 #include <linux/errno.h>
@@ -50,10 +42,9 @@
 #include <plat/sys_config.h>
 #include <linux/pwm.h>
 /* hight resolution timer */
-#if HRTIMER_OK
 #include <linux/hrtimer.h>
 #include <linux/ktime.h>
-#endif
+
 #define LIRC_DRIVER_NAME "lirc_send_pwm"
 /* this may have to be adapted for different platforms */
 
@@ -82,7 +73,7 @@ fmt, ## args);                          \
 static spinlock_t lock;
 
 /* set the default pwm num only 1 or 2 or A20 */
-static int pwm_num = 1;
+static int pwm_num = 0;
 struct pwm_device *pwm_out;
 /* enable debugging messages */
 static int debug;
@@ -106,84 +97,88 @@ static struct platform_device *lirc_send_pwm_dev;
 static struct lirc_buffer rbuf;
 
 /* initialized/set in init_timing_params() */
-static unsigned int freq = 38000;
-static unsigned int duty_cycle = 50;
-static unsigned long period;
-static unsigned long pulse_width;
-static unsigned long space_width;
-//static unsigned long current_delay;
-//static int delay_run;
+static int freq = 38000;
+static int duty_cycle = 50;
+static int period;
+static int pulse_width;
 
+
+
+//static const int end = 200;
 //static struct hrtimer hr_timer;
+//static int state; //state of sending
+//static long next_length;
+//static int next_pwm; // 0 disable 1 enable
 ///* stuff for TX pin */
-//enum hrtimer_restart timerdelay( struct hrtimer *timer )
+//enum hrtimer_restart statemachine( struct hrtimer *timer )
 //{
 //
-//     /* if current_delay > 0 {
-//             delay_run = 1;
-//             current_delay --;
-//             return HRTIMER_RESTART;
-//      }
-//      else{*/
-//        delay_run = 0;
-//        return HRTIMER_NORESTART;
-//      //}
+//
+//
+//        if state == end {
+//            return HRTIMER_NORESTART;
+//        }else
+//            return HRTIMER_RESTART
+//
+//
 //}
 static void safe_udelay(unsigned long usecs)
 {
-#if HRTIMER_OK
-    struct timespec delay;
-    if (usecs%1000000 > 0){
-        delay.tv_sec = 1; // delay > 1.99s is truncated
-        delay.tv_nsec =(usecs-1000000)*1000; /* time over 1 second are passed to hrtimer */
-    }else {
-        delay.tv_sec = 0;
-        delay.tv_nsec = usecs * 1000;
-    }
-        hrtimer_nanosleep(&delay,NULL,HRTIMER_MODE_REL,CLOCK_MONOTONIC);
-#else
-udelay(usecs); //TODO add guar
-#endif
+    if (usecs>2000) {
+        udelay(2000); //simple protection
+    } else
+    udelay(usecs);
 }
 
-static int init_timing_params(unsigned int new_duty_cycle,
-                              unsigned int new_freq)
+static int init_timing_params(int new_duty_cycle,
+                              int new_freq)
 {
-
-         int ret;
-         period = 1000000000L / freq;
-         pulse_width = period * duty_cycle / 100;
-         ret = pwm_config(pwm_out,period,pulse_width);
-
-         return ret;
+    int ret;
+    period = 1000000000L / freq;
+    pulse_width = period / 100 * duty_cycle ;
+    dprintk("pwm pointeur address %p",&pwm_out);
+    dprintk("pwm address %p",pwm_out);
+    ret = pwm_config(pwm_out,pulse_width,period);
+    if (ret) {
+        printk(KERN_ERR LIRC_DRIVER_NAME ":config pwm fail period or duty mismatch");
+    }
+    dprintk(" pwm is configured with %d duty and %d Hz period: %d pulse: %d ns",new_duty_cycle,new_freq,period,pulse_width);
+    return ret;
 }
 
-static ssize_t setup_tx(unsigned int pwm){
-    int result;
-    if (pwm == 0 || pwm ==1){
-    pwm_out = pwm_request(pwm, "Ir-pwm-out");
-        if (!pwm_out){
-            goto fail;
-        }
-        period = 1000000000L / freq;
-        pulse_width = period * duty_cycle / 100;
-        result = pwm_config(pwm_out,period,pulse_width);
-        return 0;
-    }else if (pwm == -1 ){
-        goto fail_conf;
-    }
-//    pwm_polarity(pwm_out,active_state); //replace by inverting ratio or add in linuw/pwm.h
+static int setup_tx(unsigned int pwm)
+{
+    int result = 0;
 
-    fail_conf:
-        pwm_free(pwm_out);
-    fail:
-        return result;
+        if (pwm == 0 || pwm ==1) {
+            if (pwm_out==NULL){
+                pwm_out = pwm_request(pwm, "Ir-pwm-out");
+                }else{
+                pwm_free(pwm_out);
+                pwm_out = pwm_request(pwm, "Ir-pwm-out");
+                }
+
+            if (IS_ERR(pwm_out)) {
+                printk(KERN_ERR LIRC_DRIVER_NAME "pwm request fail returned %ld",PTR_ERR(pwm_out));
+                goto fail;
+            }
+            result = init_timing_params(duty_cycle,freq);
+            return result;
+        } else if (pwm == -1 ) {
+            goto fail_conf;
+        }
+
+fail_conf:
+    pwm_free(pwm_out);
+fail:
+    return result;
 }
 static long send_pulse(unsigned long length)
 {
         if (length <= 0)
             return 0;
         pwm_enable(pwm_out);
+        dprintk("pwm enable");
         safe_udelay(length);
         return 0;
 
@@ -195,6 +190,7 @@ static void send_space(long length)
         if (length <= 0)
                 return;
         pwm_disable(pwm_out);
+        dprintk("pwm disable");
         safe_udelay(length);
 }
 
@@ -205,19 +201,21 @@ static void send_space(long length)
    timing params initialized and interrupts activated */
 static int set_use_inc(void *data)
 {
-        int result;
-        unsigned long flags;
-        init_timing_params(duty_cycle, freq);
-        /* initialize pulse/space widths */
-        device_open++; //utile?
-        return 0;
+    int ret;
+    ret = init_timing_params(duty_cycle, freq);
+    //TODO add initalisation hrtimer
+    dprintk("dev open");
+    device_open++; //utile?
+    return ret;
 }
 
 /* called when character device is closed */
 static void set_use_dec(void *data)
 {
     pwm_disable(pwm_out);
+    dprintk("dev close");
     device_open--; //utile ?
+    //TODO add free hrtimer
 }
 
 /* lirc to tx */
@@ -347,8 +345,6 @@ static struct platform_driver lirc_send_pwm_driver = {
 
 static DEFINE_MUTEX(sysfs_lock);
 
-
-/* TODO a mettre à jour pour pwm */
 static ssize_t lirc_pwm_show(struct class *class, struct class_attribute *attr, char *buf)
 {
     ssize_t status;
@@ -364,7 +360,7 @@ static ssize_t lirc_pwm_store(struct class *class, struct class_attribute *attr,
     ssize_t status;
     mutex_lock(&sysfs_lock);
     sscanf(buf,"%d",&new_pwm);
-    status = setup_tx(new_pwm) ? : size;
+    status = setup_tx(new_pwm) ? -EINVAL : size;
     mutex_unlock(&sysfs_lock);
     return status;
 }
@@ -388,7 +384,7 @@ static ssize_t lirc_active_state_store(struct class *class, struct class_attribu
     mutex_lock(&sysfs_lock);
     sscanf(buf,"%d",&try_value);
     if ((try_value==0) || (try_value==1)) {
-//        pwm_polarity(pwm_out,try_value);
+    //    pwm_polarity(pwm_out,try_value);
     }
     else
         status = -EINVAL;
@@ -402,7 +398,7 @@ static ssize_t lirc_active_state_store(struct class *class, struct class_attribu
 
 static struct class_attribute lirc_send_pwm_attrs[] = {
     __ATTR(pwm_num, 0644, lirc_pwm_show, lirc_pwm_store),
-    __ATTR(lirc_active_state, 0644, lirc_active_state_show, lirc_active_state_store),
+    __ATTR(active_state, 0644, lirc_active_state_show, lirc_active_state_store),
     __ATTR_NULL,
 };
 static struct class lirc_send_pwm_class = { //TODOI renomage
@@ -418,7 +414,7 @@ static struct class lirc_send_pwm_class = { //TODOI renomage
 static int __init lirc_send_pwm_init(void)
 {
         int result;
-        int active_periode;
+
 
         /* Init read buffer. */
         result = lirc_buffer_init(&rbuf, sizeof(int), RBUF_LEN);
@@ -445,7 +441,9 @@ static int __init lirc_send_pwm_init(void)
 
         result = setup_tx(pwm_num);
         if (result){
+            printk(KERN_ERR LIRC_DRIVER_NAME ": setup failed returned %d\n",result);
             goto pwm_free_exit;
+
         }
 
 
@@ -454,7 +452,7 @@ static int __init lirc_send_pwm_init(void)
 pwm_free_exit:
         setup_tx(-1);
 
-exit_device_add:
+
         platform_device_unregister(lirc_send_pwm_dev); /*TODO : verify this line */
 
 exit_device_put:
@@ -486,7 +484,7 @@ static void lirc_send_pwm_exit(void)
 
 static int __init lirc_send_pwm_init_module(void)
 {
-    int result,temp_in_pin,temp_out_pin;
+    int result;
 
         result = lirc_send_pwm_init();
         if (result)
@@ -494,8 +492,7 @@ static int __init lirc_send_pwm_init_module(void)
     // 'driver' is the lirc driver
         driver.features = LIRC_CAN_SET_SEND_DUTY_CYCLE |
     LIRC_CAN_SET_SEND_CARRIER |
-    LIRC_CAN_SEND_PULSE |
-    LIRC_CAN_REC_MODE2; // TODO enlever ce qu'il y a en trop
+    LIRC_CAN_SEND_PULSE ; // TODO enlever ce qu'il y a en trop
 
         driver.dev = &lirc_send_pwm_dev->dev;  // link THIS platform device to lirc driver TODO renomer
         driver.minor = lirc_register_driver(&driver);

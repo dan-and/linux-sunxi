@@ -62,7 +62,7 @@
 #define SUNXI_PWM_DEBUG
 
 //comment to get debug messages
-#undef SUNXI_PWM_DEBUG
+//#undef SUNXI_PWM_DEBUG
 
 void release_pwm_sunxi(struct kobject *kobj);
 void pwm_setup_available_channels(void );
@@ -820,7 +820,7 @@ void pwm_setup_available_channels( void ) {
 
 	pwm_available_chan[0].pin_name = "PB2";
 	pwm_available_chan[0].period = 10000;
-	pwm_available_chan[0].duty_percent = 100;
+	pwm_available_chan[0].duty_percent = -1;
 	*(unsigned int *)&pwm_available_chan[0].period_reg = 0;
 	pwm_available_chan[0].prescale = 0;
 
@@ -845,7 +845,7 @@ void pwm_setup_available_channels( void ) {
 	pwm_available_chan[1].pin_current.s0.pin3_select = 0x02;
 	pwm_available_chan[1].pin_name = "PI3";
 	pwm_available_chan[1].period = 10000;
-	pwm_available_chan[1].duty_percent = 50;
+	pwm_available_chan[1].duty_percent = -1;
 	*(unsigned int *)&pwm_available_chan[1].period_reg = 0;
 	pwm_available_chan[1].prescale = 0;
 
@@ -892,7 +892,6 @@ int pwm_config(struct pwm_device *pwm, int duty_ns, int period_ns)
 	pwm->chan->period = period_ns / 1000;
 	pwm->chan->prescale = pwm_get_best_prescale(pwm->chan->period);
 	pwm->chan->duty = duty_ns / 1000;
-	fixup_duty(pwm->chan);
 	pwm_set_mode(NO_ENABLE_CHANGE,pwm->chan);
 	return 0;
 }
