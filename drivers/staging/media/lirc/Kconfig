@@ -91,5 +91,10 @@ config LIRC_SUNXI_RAW
 	  Driver for Allwinner's native CIR interface, passing
 	  data (almost) unfiltered to LIRC device
 	
+config LIRC_SEND_PWM
+	tristate "LIRC Blaster with PWM carriere generation"
+	depends on LIRC && SUNXI_PWM
+	help
+	  Driver that use sunxi native pwm driver from carrier frequency
 
 endif

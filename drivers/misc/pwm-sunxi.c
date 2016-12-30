@@ -16,7 +16,7 @@
  * - Implement duty_percent=0 to set pwm line to 0 - right now it goes to 100%
  * - Change the script_bin settings loader for pwm_period to allow text based values (100ms, 10hz,...)
  * - Merge h & c file
- * -
+ * - convert period in ns in order to have a best precision calculation.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -62,7 +62,7 @@
 #define SUNXI_PWM_DEBUG
 
 //comment to get debug messages
-#undef SUNXI_PWM_DEBUG
+//#undef SUNXI_PWM_DEBUG
 
 void release_pwm_sunxi(struct kobject *kobj);
 void pwm_setup_available_channels(void );
@@ -463,7 +463,7 @@ unsigned long convert_string_to_microseconds(const char *buf) {
 
 
 
-static const unsigned int prescale_divisor[13] = {120,
+static const unsigned int prescale_divisor[16] = {120,
 						  180,
 						  240,
 						  360,
@@ -475,7 +475,10 @@ static const unsigned int prescale_divisor[13] = {120,
 						  24000,
 						  36000,
 						  48000,
-						  72000};
+						  72000,
+						  480,/* Invalid Option */
+						  480,/* Invalid Option */
+						  1};
 
 /*
  * Find the best prescale value for the period
@@ -485,54 +488,53 @@ static const unsigned int prescale_divisor[13] = {120,
  * taking anything that works
  */
 enum sun4i_pwm_prescale  pwm_get_best_prescale(unsigned long long period_in_us) {
-	int i;
-	unsigned long period_ticks_ns = 42; /* non exact value this introduce 0.8% per clock of error */
-	unsigned long period_ns = period_in_us *1000;
+
+	unsigned long period_ns = period_in_us * 1000;
 	enum sun4i_pwm_prescale best_prescale = PRESCALE_DIV1;
 /* with this code the lowest prescaler is always selected */
     if (period_in_us!= 0){
 
-        if (period_ns < MAX_CYCLES * period_ticks_ns) /* ~2.7ms */
+        if (period_ns < MAX_CYCLES * 1000 / 24) /* ~2.7ms */
             goto finded;
 
-        if (period_ns < MAX_CYCLES * 120 * period_ticks_ns){ /*~327ms~*/
+        if (period_ns < MAX_CYCLES * 5000){ /*~327ms~*/
             best_prescale = PRESCALE_DIV120;
             goto finded;
         }
-        if (period_ns < MAX_CYCLES * 180 * period_ticks_ns){ /*~491ms~*/
+        if (period_ns < MAX_CYCLES * 7500){ /*~491ms~*/
             best_prescale = PRESCALE_DIV180;
             goto finded;
         }
-        if (period_ns < MAX_CYCLES * 240 * period_ticks_ns){ /*~655ms~*/
+        if (period_ns < MAX_CYCLES * 10000){ /*~655ms~*/
             best_prescale = PRESCALE_DIV240;
             goto finded;
         }
-        if (period_ns < MAX_CYCLES * 360 * period_ticks_ns){ /*~983ms~*/
+        if (period_ns < MAX_CYCLES * 15000){ /*~983ms~*/
             best_prescale = PRESCALE_DIV360;
             goto finded;
         }
-        if (period_ns < MAX_CYCLES * 480 * period_ticks_ns){ /*~1310ms~*/
+        if (period_ns < MAX_CYCLES * 20000){ /*~1310ms~*/
             best_prescale = PRESCALE_DIV480;
             goto finded;
         }
-        if (period_in_us < MAX_CYCLES * 12 * period_ticks_ns){ /*~32767.5ms~*/
+        if (period_in_us < MAX_CYCLES * 500){ /*~32767.5ms~*/
             best_prescale = PRESCALE_DIV12k;
             goto finded;
         }
 
-        if (period_in_us < MAX_CYCLES * 24 * period_ticks_ns){ /*~65535ms*/
+        if (period_in_us < MAX_CYCLES * 1000){ /*~65535ms*/
             best_prescale = PRESCALE_DIV24k;
             goto finded;
         }
-        if (period_in_us < MAX_CYCLES * 36 * period_ticks_ns){ /*~98302ms~*/
+        if (period_in_us < MAX_CYCLES * 1500){ /*~98302ms~*/
             best_prescale = PRESCALE_DIV36k;
             goto finded;
         }
-        if (period_in_us < MAX_CYCLES * 48 * period_ticks_ns){ /*~130070ms~*/
+        if (period_in_us < MAX_CYCLES * 2000){ /*~130070ms~*/
             best_prescale = PRESCALE_DIV48k;
             goto finded;
         }
-        if (period_in_us < MAX_CYCLES * 72 * period_ticks_ns){  /*max absolute error ~~1.5ms */
+        if (period_in_us < MAX_CYCLES * 3000){  /*max absolute error ~~1.5ms */
             best_prescale = PRESCALE_DIV72k;
         }
     }
@@ -548,8 +550,10 @@ enum sun4i_pwm_prescale  pwm_get_best_prescale(unsigned long long period_in_us) 
  */
 unsigned int get_entire_cycles(struct sun4i_pwm_available_channel *chan) {
 	unsigned int entire_cycles = 0x01;
-	if ((2 * prescale_divisor[chan->prescale] * MAX_CYCLES) > 0) {
-		entire_cycles = chan->period / (prescale_divisor[chan->prescale] /24);
+	if ((2 * prescale_divisor[chan->prescale] * MAX_CYCLES) > 0) { /* I don't understand this test because it is always true*/
+		entire_cycles = chan->period * 24 / (prescale_divisor[chan->prescale]); /* I passed frequency to numerator frequency */
+                                                                                /* which increases the precision with integer */
+                                                                                /* instead of an excessive rounding */
 	}
 	if(entire_cycles == 0) {entire_cycles = MAX_CYCLES;}
 	if(entire_cycles > MAX_CYCLES) {entire_cycles = MAX_CYCLES;}
@@ -570,7 +574,9 @@ unsigned int get_active_cycles(struct sun4i_pwm_available_channel *chan) {
 	if(chan->duty < 0 && chan->period) {
        		active_cycles = entire_cycles-1;
 	} else if ((2 * prescale_divisor[chan->prescale] * MAX_CYCLES) > 0) {
-		active_cycles = chan->duty / (prescale_divisor[chan->prescale] /24);
+		active_cycles = chan->duty * 24 / (prescale_divisor[chan->prescale]);/* I passed frequency to numerator frequency */
+                                                                                /* which increases the precision with integer */
+                                                                                /* instead of an excessive rounding */
 	}
 /*	if(active_cycles == 0) {active_cycles = 0x0ff;} */
 #ifdef SUNXI_PWM_DEBUG
@@ -697,7 +703,7 @@ ssize_t pwm_set_mode(unsigned int enable, struct sun4i_pwm_available_channel *ch
 			chan->ctrl_current.s.ch1_act_state = 0;
 			chan->ctrl_current.s.ch1_mode = 0;
 			chan->ctrl_current.s.ch1_pulse_start = 0;
-			chan->ctrl_current.s.ch1_en = 1;
+			chan->ctrl_current.s.ch1_en = 0; /* 0 not 1 because channel 0 or 1 must be disable at init */
 			chan->ctrl_current.s.ch1_clk_gating = 0;
 			break;
 		default:
@@ -814,7 +820,7 @@ void pwm_setup_available_channels( void ) {
 
 	pwm_available_chan[0].pin_name = "PB2";
 	pwm_available_chan[0].period = 10000;
-	pwm_available_chan[0].duty_percent = 100;
+	pwm_available_chan[0].duty_percent = -1;
 	*(unsigned int *)&pwm_available_chan[0].period_reg = 0;
 	pwm_available_chan[0].prescale = 0;
 
@@ -839,7 +845,7 @@ void pwm_setup_available_channels( void ) {
 	pwm_available_chan[1].pin_current.s0.pin3_select = 0x02;
 	pwm_available_chan[1].pin_name = "PI3";
 	pwm_available_chan[1].period = 10000;
-	pwm_available_chan[1].duty_percent = 50;
+	pwm_available_chan[1].duty_percent = -1;
 	*(unsigned int *)&pwm_available_chan[1].period_reg = 0;
 	pwm_available_chan[1].prescale = 0;
 
@@ -886,7 +892,6 @@ int pwm_config(struct pwm_device *pwm, int duty_ns, int period_ns)
 	pwm->chan->period = period_ns / 1000;
 	pwm->chan->prescale = pwm_get_best_prescale(pwm->chan->period);
 	pwm->chan->duty = duty_ns / 1000;
-	fixup_duty(pwm->chan);
 	pwm_set_mode(NO_ENABLE_CHANGE,pwm->chan);
 	return 0;
 }
@@ -912,6 +917,27 @@ void pwm_disable(struct pwm_device *pwm)
 }
 EXPORT_SYMBOL(pwm_disable);
 
+void pwm_polarity(struct pwm_device *pwm,int act_state)
+{
+	if (pwm == NULL) {
+		return;
+	}
+	if(act_state < 2) {
+		switch (pwm->chan->channel) {
+		case 0:
+			pwm->chan->ctrl_current.s.ch0_act_state = act_state;
+			break;
+		case 1:
+			pwm->chan->ctrl_current.s.ch1_act_state = act_state;
+			break;
+		default:
+			break;
+		}
+	}
+	return;
+
+}
+EXPORT_SYMBOL(pwm_polarity);
 void pwm_free(struct pwm_device *pwm)
 {
 	if (pwm->chan->use_count) {

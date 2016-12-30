@@ -17,11 +17,12 @@
 #include "ump_kernel_common.h"
 #include "ump_kernel_memory_backend_os.h"
 #include "ump_kernel_memory_backend_dedicated.h"
+#include "ump_kernel_memory_backend_cma.h"
 
 /* Configure which dynamic memory allocator to use */
 int ump_backend = ARCH_UMP_BACKEND_DEFAULT;
 module_param(ump_backend, int, S_IRUGO); /* r--r--r-- */
-MODULE_PARM_DESC(ump_backend, "0 = dedicated memory backend (default), 1 = OS memory backend");
+MODULE_PARM_DESC(ump_backend, "0 = dedicated memory backend (default), 1 = OS memory backend, 2 = CMA based backend");
 
 /* The base address of the memory block for the dedicated memory backend */
 unsigned int ump_memory_address = ARCH_UMP_MEMORY_ADDRESS_DEFAULT;
@@ -55,6 +56,11 @@ ump_memory_backend* ump_memory_backend_create ( void )
 	{
 		DBG_MSG(2, ("Using OS memory backend, allocation limit: %d\n", ump_memory_size));
 		backend = ump_os_memory_backend_create(ump_memory_size);
+	}
+	else if (2 == ump_backend)
+	{
+		DBG_MSG(2, ("Using CMA memory backend, allocation limit: %d\n", ump_memory_size));
+		backend = ump_cma_memory_backend_create(ump_memory_size);	  
 	}
 
 	return backend;

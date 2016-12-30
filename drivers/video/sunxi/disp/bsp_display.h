@@ -53,6 +53,7 @@
 typedef unsigned int __hdle;
 
 #include <video/sunxi_disp_ioctl.h>
+//#include <video/sunxi_disp.h>
 
 #define __inf(msg, ...) pr_debug("[DISP] " msg, ##__VA_ARGS__)
 #define __wrn(msg, ...) pr_warn("[DISP] " msg, ##__VA_ARGS__)

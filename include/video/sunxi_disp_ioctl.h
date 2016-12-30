@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2007-2012 Allwinner Technology Co., Ltd.
+ * modified: Martin.Ostertag@gmx.de in 2015
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -448,6 +449,57 @@ struct __disp_video_timing {
 };
 
 typedef struct {
+	__bool enable;
+	__u32 active_state;
+	__u32 duty_ns;
+	__u32 period_ns;
+} __pwm_info_t;
+
+typedef enum {
+	FB_MODE_SCREEN0 = 0,
+	FB_MODE_SCREEN1 = 1,
+	/* two screen, top buffer for screen0, bottom buffer for screen1 */
+	FB_MODE_DUAL_SAME_SCREEN_TB = 2,
+	/* two screen, they have same contents; */
+	FB_MODE_DUAL_DIFF_SCREEN_SAME_CONTENTS = 3,
+} __fb_mode_t;
+
+typedef struct {
+	__fb_mode_t fb_mode;
+	__disp_layer_work_mode_t mode;
+	__u32 buffer_num;
+	__u32 width;
+	__u32 height;
+
+	__u32 output_width; /* used when scaler mode */
+	__u32 output_height; /* used when scaler mode */
+
+	/* used when FB_MODE_DUAL_DIFF_SCREEN_SAME_CONTENTS */
+	__u32 primary_screen_id;
+	__u32 aux_output_width;
+	__u32 aux_output_height;
+
+	/* maybe not used anymore */
+	__u32 line_length; /* in byte unit */
+	__u32 smem_len;
+	__u32 ch1_offset; /* use when PLANAR or UV_COMBINED mode */
+	__u32 ch2_offset; /* use when PLANAR mode */
+} __disp_fb_create_para_t;
+
+typedef enum {
+	DISP_INIT_MODE_SCREEN0 = 0, /* fb0 for screen0 */
+	DISP_INIT_MODE_SCREEN1 = 1, /* fb0 for screen1 */
+	/* fb0 for screen0 and fb1 for screen1 */
+	DISP_INIT_MODE_TWO_DIFF_SCREEN = 2,
+	/* fb0(up buffer for screen0, down buffer for screen1) */
+	DISP_INIT_MODE_TWO_SAME_SCREEN = 3,
+	/*
+	 * fb0 for two different screen(screen0 layer is normal layer,
+	 * screen1 layer is scaler layer);
+	 */
+	DISP_INIT_MODE_TWO_DIFF_SCREEN_SAME_CONTENTS = 4,
+} __disp_init_mode_t;
+ typedef struct {
 	__s32(*hdmi_wait_edid) (void);
 	__s32(*Hdmi_open) (void);
 	__s32(*Hdmi_close) (void);
@@ -569,58 +621,6 @@ typedef struct {
 	 __s32(*lcd_user_defined_func) (__u32 sel, __u32 para1, __u32 para2,
 					__u32 para3);
 } __lcd_panel_fun_t;
-
-typedef struct {
-	__bool enable;
-	__u32 active_state;
-	__u32 duty_ns;
-	__u32 period_ns;
-} __pwm_info_t;
-
-typedef enum {
-	FB_MODE_SCREEN0 = 0,
-	FB_MODE_SCREEN1 = 1,
-	/* two screen, top buffer for screen0, bottom buffer for screen1 */
-	FB_MODE_DUAL_SAME_SCREEN_TB = 2,
-	/* two screen, they have same contents; */
-	FB_MODE_DUAL_DIFF_SCREEN_SAME_CONTENTS = 3,
-} __fb_mode_t;
-
-typedef struct {
-	__fb_mode_t fb_mode;
-	__disp_layer_work_mode_t mode;
-	__u32 buffer_num;
-	__u32 width;
-	__u32 height;
-
-	__u32 output_width; /* used when scaler mode */
-	__u32 output_height; /* used when scaler mode */
-
-	/* used when FB_MODE_DUAL_DIFF_SCREEN_SAME_CONTENTS */
-	__u32 primary_screen_id;
-	__u32 aux_output_width;
-	__u32 aux_output_height;
-
-	/* maybe not used anymore */
-	__u32 line_length; /* in byte unit */
-	__u32 smem_len;
-	__u32 ch1_offset; /* use when PLANAR or UV_COMBINED mode */
-	__u32 ch2_offset; /* use when PLANAR mode */
-} __disp_fb_create_para_t;
-
-typedef enum {
-	DISP_INIT_MODE_SCREEN0 = 0, /* fb0 for screen0 */
-	DISP_INIT_MODE_SCREEN1 = 1, /* fb0 for screen1 */
-	/* fb0 for screen0 and fb1 for screen1 */
-	DISP_INIT_MODE_TWO_DIFF_SCREEN = 2,
-	/* fb0(up buffer for screen0, down buffer for screen1) */
-	DISP_INIT_MODE_TWO_SAME_SCREEN = 3,
-	/*
-	 * fb0 for two different screen(screen0 layer is normal layer,
-	 * screen1 layer is scaler layer);
-	 */
-	DISP_INIT_MODE_TWO_DIFF_SCREEN_SAME_CONTENTS = 4,
-} __disp_init_mode_t;
 
 typedef struct {
 	__bool b_init;
